@@ -49,6 +49,8 @@ enum ifla_gtp_role {
 #define GTP_PDP_HASHSIZE 1024
 #define GTPA_PEER_ADDRESS GTPA_SGSN_ADDRESS /* maintain legacy attr name */
 
+#define GTP_ECHO_REQUEST 1
+
 /* An active session for the subscriber. */
 struct pdp_ctx {
 	struct hlist_node	hlist_tid;
@@ -286,6 +288,13 @@ static int gtp1u_udp_encap_recv(struct gtp_dev *gtp, struct sk_buff *skb)
 
 	if ((gtp1->flags >> 5) != GTP_V1)
 		return 1;
+
+	// For echo requests, send through and don't remove header
+	if (gtp1->type == GTP_ECHO_REQUEST) {
+		netdev_dbg(gtp->dev, "forward echo request\n");
+		netif_rx(skb);
+		return 0;
+	}
 
 	if (gtp1->type != GTP_TPDU)
 		return 1;
